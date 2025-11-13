@@ -1,8 +1,8 @@
 import db from '../db.js'
 import bcrypt from 'bcrypt'
 import { createToken, denyToken, verifyToken } from '../services/tokenService.js'
-import dotenv from "dotenv"
-import mailgun from "mailgun-js"
+import formData from "form-data";
+import Mailgun from "mailgun.js";
 
 
 dotenv.config()
@@ -108,11 +108,11 @@ export const grupos = async (req, res) => {
     }
 }
 
+const mailgun = new Mailgun(formData);
 const mg = mailgun.client({
-    apiKey: process.env.MAILGUN_API_KEY,
-    domain: process.env.MAILGUN_DOMAIN,
+    username: "api",
+    key: process.env.MAILGUN_API_KEY,
 });
-
 
 export const forgotPassword = async (req, res) => {
     const { email } = req.body
@@ -238,7 +238,7 @@ export const enviarEmailVerificacao = async (req, res) => {
                 <p>Essa mensagem foi enviada para realizar a verificação do seu email. Clique no link abaixo para verificar seu email:</p>
                 <a href="${verifyLink}">${verifyLink}</a>
                 <p>O link é válido por 10 minutos.</p>`
-            }
+        }
         await mg.messages().send(data)
 
         return res.status(200).json({ msg: "Email enviado com sucesso", tokenVerifyMail })
