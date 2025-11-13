@@ -109,7 +109,7 @@ export const cadastroAluno = async (req, res) => {
     const ID_Aluno = alunoResult.insertId;
 
     await db.query(
-      "INSERT INTO grupo_aluno (ID_Grupo, ID_Aluno) VALUES (?, ?)",
+      "INSERT INTO Grupo_Aluno (ID_Grupo, ID_Aluno) VALUES (?, ?)",
       [ID_Grupo, ID_Aluno]
     );
 
