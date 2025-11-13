@@ -146,9 +146,9 @@ export const forgotPassword = async (req, res) => {
             const resetLink = `${process.env.FRONTEND_URL}/reset-senha/${token}`;
 
             const data = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-                from: `Lideranças Empáticas <${process.env.MAILGUN_DOMAIN}>`,
+                from: `${process.env.MAILGUN_DOMAIN}`,
                 to: userEmail,
-                subject: "Recuperação de senha",
+                subject: "Recuperação de senha - Lideranças Empáticas",
                 html: `
                     <p>Olá, ${userName}!</p>
                     <p>Essa mensagem foi enviada para realizar a verificação do seu email. Clique no link abaixo para verificar seu email:</p>
@@ -236,9 +236,9 @@ export const enviarEmailVerificacao = async (req, res) => {
         const verifyLink = `${process.env.FRONTEND_URL}/verificar/${tokenVerifyMail}`
 
         const data = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-            from: `Lideranças Empáticas <${process.env.MAILGUN_DOMAIN}>`,
+            from: `${process.env.MAILGUN_DOMAIN}`,
             to: userEmail,
-            subject: "Recuperação de senha",
+            subject: "Verificação de email - Lideranças Empáticas",
             html: `
                     <p>Olá, ${userName}!</p>
                     <p>Essa mensagem foi enviada para realizar a verificação do seu email. Clique no link abaixo para verificar seu email:</p>
