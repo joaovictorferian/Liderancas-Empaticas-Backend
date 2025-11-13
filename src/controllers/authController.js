@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt'
 import { createToken, denyToken, verifyToken } from '../services/tokenService.js'
 import formData from "form-data";
 import Mailgun from "mailgun.js";
-import dotenv from 'dotenv' 
+import dotenv from 'dotenv'
 
 
 dotenv.config()
@@ -145,17 +145,19 @@ export const forgotPassword = async (req, res) => {
             const { token } = createToken({ id: userId, tipo }, { expiresIn: "15m" })
             const resetLink = `${process.env.FRONTEND_URL}/reset-senha/${token}`;
 
-
-            const data = {
-                from: `Liderancas-Empaticas <no-reply@${process.env.MAILGUN_DOMAIN}>`,
+            const data = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
+                from: `Lideranças Empáticas <${process.env.MAILGUN_DOMAIN}>`,
                 to: userEmail,
-                subject: "Redefinição de senha",
-                html: `<p>Olá, ${userName}!</p>
-                    <p>Você solicitou a redefinição de senha. Clique no link abaixo para criar uma nova senha:</p>
+                subject: "Recuperação de senha",
+                html: `
+                    <p>Olá, ${userName}!</p>
+                    <p>Essa mensagem foi enviada para realizar a verificação do seu email. Clique no link abaixo para verificar seu email:</p>
                     <a href="${resetLink}">${resetLink}</a>
-                    <p>O link é válido por 15 minutos.</p>`
-            };
-            await mg.messages().send(data)
+                    <p>O link é válido por 10 minutos.</p>
+                    `,
+            });
+            console.log(data)
+
 
             message = "Email de recuperação enviado"
         } else {
@@ -233,16 +235,19 @@ export const enviarEmailVerificacao = async (req, res) => {
         const { token: tokenVerifyMail } = createToken({ id: userIdToken, tipo }, { expiresIn: "10m" })
         const verifyLink = `${process.env.FRONTEND_URL}/verificar/${tokenVerifyMail}`
 
-        const data = {
-            from: `Liderancas-Empaticas <no-reply@${process.env.MAILGUN_DOMAIN}>`,
+        const data = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
+            from: `Lideranças Empáticas <${process.env.MAILGUN_DOMAIN}>`,
             to: userEmail,
-            subject: "Verificação de email",
-            html: `<p>Olá, ${userName}!</p>
-                <p>Essa mensagem foi enviada para realizar a verificação do seu email. Clique no link abaixo para verificar seu email:</p>
-                <a href="${verifyLink}">${verifyLink}</a>
-                <p>O link é válido por 10 minutos.</p>`
-        }
-        await mg.messages().send(data)
+            subject: "Recuperação de senha",
+            html: `
+                    <p>Olá, ${userName}!</p>
+                    <p>Essa mensagem foi enviada para realizar a verificação do seu email. Clique no link abaixo para verificar seu email:</p>
+                    <a href="${verifyLink}">${verifyLink}</a>
+                    <p>O link é válido por 10 minutos.</p>
+                    `,
+            });
+            console.log(data)
+
 
         return res.status(200).json({ msg: "Email enviado com sucesso", tokenVerifyMail })
     } catch (err) {
