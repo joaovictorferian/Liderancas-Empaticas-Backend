@@ -108,8 +108,6 @@ export const grupos = async (req, res) => {
     }
 }
 
-const mailgun = new Mailgun(FormData)
-
 const mg = mailgun.client({
     apiKey: process.env.MAILGUN_API_KEY,
     domain: process.env.MAILGUN_DOMAIN,
