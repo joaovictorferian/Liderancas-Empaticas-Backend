@@ -112,8 +112,10 @@ export const grupos = async (req, res) => {
 const mailgun = new Mailgun(formData);
 const mg = mailgun.client({
     username: "api",
-    key: process.env.MAILGUN_API_KEY,
+    key: process.env.API_KEY,
 });
+
+console.log("API Key:", process.env.API_KEY ? "✅ OK" : "❌ NÃO DEFINIDA");
 
 export const forgotPassword = async (req, res) => {
     const { email } = req.body
