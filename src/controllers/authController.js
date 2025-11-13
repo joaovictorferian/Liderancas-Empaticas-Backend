@@ -145,8 +145,8 @@ export const forgotPassword = async (req, res) => {
             const { token } = createToken({ id: userId, tipo }, { expiresIn: "15m" })
             const resetLink = `${process.env.FRONTEND_URL}/reset-senha/${token}`;
 
-            const data = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-                from: `${process.env.MAILGUN_DOMAIN}`,
+            const data = await mg.messages.create("sandboxe2fcde14e8a3484eae6c29373e367a21.mailgun.org", {
+                from: "Lideranças Empáticas <sandboxe2fcde14e8a3484eae6c29373e367a21.mailgun.org>",
                 to: userEmail,
                 subject: "Recuperação de senha - Lideranças Empáticas",
                 html: `
@@ -235,8 +235,8 @@ export const enviarEmailVerificacao = async (req, res) => {
         const { token: tokenVerifyMail } = createToken({ id: userIdToken, tipo }, { expiresIn: "10m" })
         const verifyLink = `${process.env.FRONTEND_URL}/verificar/${tokenVerifyMail}`
 
-        const data = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-            from: `${process.env.MAILGUN_DOMAIN}`,
+        const data = await mg.messages.create("sandboxe2fcde14e8a3484eae6c29373e367a21.mailgun.org", {
+            from: "Lideranças Empáticas <sandboxe2fcde14e8a3484eae6c29373e367a21.mailgun.org>",
             to: userEmail,
             subject: "Verificação de email - Lideranças Empáticas",
             html: `
