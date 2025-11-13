@@ -1,9 +1,9 @@
 import db from '../db.js'
 import bcrypt from 'bcrypt'
 import { createToken, denyToken, verifyToken } from '../services/tokenService.js'
-import { json } from 'express'
-import dotenv from "dotenv";
-import nodemailer from "nodemailer"
+import dotenv from "dotenv"
+import mailgun from "mailgun-js"
+
 
 dotenv.config()
 
@@ -16,53 +16,53 @@ const sanitizeGrupo = (u) => ({ grupoId: ID_Grupo, grupoNome: u.Grupo_Nome, grup
 export const login = async (req, res) => {
     const { email, senha } = req.body;
     if (!email || !senha)
-      return res.status(400).json({ error: "Preencha todos os campos" });
-  
+        return res.status(400).json({ error: "Preencha todos os campos" });
+
     try {
-      const [rowsAluno] = await db.query(
-        "SELECT * FROM Aluno WHERE Aluno_Email = ?",
-        [email]
-      );
-      const [rowsUsuario] = await db.query(
-        "SELECT * FROM Usuario WHERE Usuario_Email = ?",
-        [email]
-      );
-  
-      let user, tipo;
-  
-      if (rowsAluno.length > 0) {
-        user = rowsAluno[0];
-        tipo = "Aluno";
-        const ok = await bcrypt.compare(senha, user.Aluno_Senha)
-        if (!ok) return res.status(409).json({ error: "Credenciais inválidas" })
-      } else if (rowsUsuario.length > 0) {
-        user = rowsUsuario[0];
-        tipo = "Usuario";
-        const ok = await bcrypt.compare(senha, user.Usuario_Senha)
-        if (!ok) return res.status(409).json({ error: "Credenciais inválidas" })
-      } else {
-        return res.status(409).json({ error: "Credenciais inválidas" });
-      }
-  
-      const { token } = createToken({ id: user.ID_Aluno || user.ID_Usuario });
-      const verificado = user.Verificado;
-  
-      return res.status(200).json({
-        msg: "Login concluído!",
-        token,
-        verificado,
-        tipo,
-        ID: user.ID_Aluno || user.ID_Usuario,
-        nome: user.Aluno_Nome || user.Usuario_Nome,
-        email: user.Aluno_Email || user.Usuario_Email,
-        Grupo: user.Aluno_Grupo || null
-      });
+        const [rowsAluno] = await db.query(
+            "SELECT * FROM Aluno WHERE Aluno_Email = ?",
+            [email]
+        );
+        const [rowsUsuario] = await db.query(
+            "SELECT * FROM Usuario WHERE Usuario_Email = ?",
+            [email]
+        );
+
+        let user, tipo;
+
+        if (rowsAluno.length > 0) {
+            user = rowsAluno[0];
+            tipo = "Aluno";
+            const ok = await bcrypt.compare(senha, user.Aluno_Senha)
+            if (!ok) return res.status(409).json({ error: "Credenciais inválidas" })
+        } else if (rowsUsuario.length > 0) {
+            user = rowsUsuario[0];
+            tipo = "Usuario";
+            const ok = await bcrypt.compare(senha, user.Usuario_Senha)
+            if (!ok) return res.status(409).json({ error: "Credenciais inválidas" })
+        } else {
+            return res.status(409).json({ error: "Credenciais inválidas" });
+        }
+
+        const { token } = createToken({ id: user.ID_Aluno || user.ID_Usuario });
+        const verificado = user.Verificado;
+
+        return res.status(200).json({
+            msg: "Login concluído!",
+            token,
+            verificado,
+            tipo,
+            ID: user.ID_Aluno || user.ID_Usuario,
+            nome: user.Aluno_Nome || user.Usuario_Nome,
+            email: user.Aluno_Email || user.Usuario_Email,
+            Grupo: user.Aluno_Grupo || null
+        });
     } catch (err) {
-      console.error("login error:", err);
-      return res.status(500).json({ error: "Erro no login" });
+        console.error("login error:", err);
+        return res.status(500).json({ error: "Erro no login" });
     }
-  };
-  
+};
+
 
 export const alunos = async (req, res) => {
     try {
@@ -108,22 +108,13 @@ export const grupos = async (req, res) => {
     }
 }
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
+const mailgun = new Mailgun(FormData)
+
+const mg = mailgun.client({
+    apiKey: process.env.MAILGUN_API_KEY,
+    domain: process.env.MAILGUN_DOMAIN,
 });
 
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("❌ Erro ao conectar ao servidor SMTP:", error);
-    }
-    if (success) {
-        console.log("✅ Servidor SMTP pronto para enviar mensagens!");
-    }
-});
 
 export const forgotPassword = async (req, res) => {
     const { email } = req.body
@@ -153,15 +144,18 @@ export const forgotPassword = async (req, res) => {
             const { token } = createToken({ id: userId, tipo }, { expiresIn: "15m" })
             const resetLink = `${process.env.FRONTEND_URL}/reset-senha/${token}`;
 
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
+
+            const data = {
+                from: `Liderancas-Empaticas <no-reply@${process.env.MAILGUN_DOMAIN}>`,
                 to: userEmail,
                 subject: "Redefinição de senha",
                 html: `<p>Olá, ${userName}!</p>
-                          <p>Você solicitou a redefinição de senha. Clique no link abaixo para criar uma nova senha:</p>
-                          <a href="${resetLink}">${resetLink}</a>
-                          <p>O link é válido por 15 minutos.</p>`
-            })
+                    <p>Você solicitou a redefinição de senha. Clique no link abaixo para criar uma nova senha:</p>
+                    <a href="${resetLink}">${resetLink}</a>
+                    <p>O link é válido por 15 minutos.</p>`
+            };
+            await mg.messages().send(data)
+
             message = "Email de recuperação enviado"
         } else {
             message = "A mensagem não pode ser enviada"
@@ -175,7 +169,7 @@ export const forgotPassword = async (req, res) => {
 }
 
 export const resetPassword = async (req, res) => {
-    const {token} = req.params    
+    const { token } = req.params
     const { senha, confirmarSenha } = req.body
 
     if (!senha || !confirmarSenha) return res.status(400).json({ error: "Preencha todos os campos" })
@@ -238,15 +232,16 @@ export const enviarEmailVerificacao = async (req, res) => {
         const { token: tokenVerifyMail } = createToken({ id: userIdToken, tipo }, { expiresIn: "10m" })
         const verifyLink = `${process.env.FRONTEND_URL}/verificar/${tokenVerifyMail}`
 
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        const data = {
+            from: `Liderancas-Empaticas <no-reply@${process.env.MAILGUN_DOMAIN}>`,
             to: userEmail,
             subject: "Verificação de email",
             html: `<p>Olá, ${userName}!</p>
-                          <p>Essa mensagem foi enviada para realizar a verificação do seu email. Clique no link abaixo para verificar seu email:</p>
-                          <a href="${verifyLink}">${verifyLink}</a>
-                          <p>O link é válido por 10 minutos.</p>`
-        })
+                <p>Essa mensagem foi enviada para realizar a verificação do seu email. Clique no link abaixo para verificar seu email:</p>
+                <a href="${verifyLink}">${verifyLink}</a>
+                <p>O link é válido por 10 minutos.</p>`
+            }
+        await mg.messages().send(data)
 
         return res.status(200).json({ msg: "Email enviado com sucesso", tokenVerifyMail })
     } catch (err) {
@@ -257,7 +252,7 @@ export const enviarEmailVerificacao = async (req, res) => {
 }
 
 export const verificarEmail = async (req, res) => {
-    const {token} = req.params
+    const { token } = req.params
     try {
         const decoded = await verifyToken(token)
         const userId = decoded.id
