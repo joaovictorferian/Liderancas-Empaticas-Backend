@@ -2,7 +2,7 @@ import db from '../db.js'
 import bcrypt from 'bcrypt'
 import { createToken, denyToken, verifyToken } from '../services/tokenService.js'
 import formData from "form-data";
-import Mailgun from "mailgun.js";
+import mailgun from "mailgun.js";
 import dotenv from 'dotenv'
 
 
@@ -109,8 +109,8 @@ export const grupos = async (req, res) => {
     }
 }
 
-const mailgun = new Mailgun(formData);
-const mg = mailgun.client({
+const mgClient = new mailgun(formData);
+const mg = mgClient.client({
     username: "api",
     key: process.env.API_KEY,
 });
