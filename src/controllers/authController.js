@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt'
 import { createToken, denyToken, verifyToken } from '../services/tokenService.js'
 import formData from "form-data";
 import Mailgun from "mailgun.js";
+import dotenv from 'dotenv' 
 
 
 dotenv.config()
